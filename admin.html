@@ -1,8 +1,829 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>لوحة طلبات كاملين</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="assets/style.css"></head><body class="admin-body"><header class="admin-header"><div class="container"><a class="brand" href="index.html"><span class="brand-mark">ك</span><span><b>كاملين</b><small>لوحة إدارة الطلبات</small></span></a><a class="btn btn-outline" href="index.html">عرض الموقع</a></div></header><main class="container admin-main"><div class="admin-title"><div><span class="eyebrow">إدارة الحجوزات</span><h1>طلبات العملاء</h1><p>الطلبات محفوظة على هذا الجهاز فقط. عند ربط Supabase تصبح مشتركة بين جميع الأجهزة.</p></div><div><button class="btn btn-outline" id="exportBtn">تصدير CSV</button><button class="btn btn-danger" id="clearBtn">حذف الكل</button></div></div><div class="admin-stats"><div><b id="allCount">0</b><span>إجمالي الطلبات</span></div><div><b id="newCount">0</b><span>طلبات جديدة</span></div><div><b id="doneCount">0</b><span>مكتملة</span></div></div><div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>العميل</th><th>الهاتف</th><th>الخدمة</th><th>المنطقة</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="bookingRows"></tbody></table><div id="emptyState" class="empty-state">لا توجد طلبات محفوظة حتى الآن.</div></div></main><script>
-let bookings=JSON.parse(localStorage.getItem('kamlin_bookings')||'[]');
-const rows=document.getElementById('bookingRows'), empty=document.getElementById('emptyState');
-function render(){rows.innerHTML='';empty.style.display=bookings.length?'none':'block';bookings.forEach(b=>{const tr=document.createElement('tr');tr.innerHTML=`<td>${new Date(b.createdAt).toLocaleString('ar-EG')}</td><td><b>${b.name}</b><small>${b.notes||''}</small></td><td><a href="tel:${b.phone}">${b.phone}</a></td><td>${b.service}</td><td>${b.area||'-'}</td><td><select onchange="statusChange(${b.id},this.value)"><option ${b.status==='جديد'?'selected':''}>جديد</option><option ${b.status==='تم التواصل'?'selected':''}>تم التواصل</option><option ${b.status==='مؤكد'?'selected':''}>مؤكد</option><option ${b.status==='مكتمل'?'selected':''}>مكتمل</option></select></td><td><button class="table-delete" onclick="removeItem(${b.id})">حذف</button></td>`;rows.appendChild(tr)});document.getElementById('allCount').textContent=bookings.length;document.getElementById('newCount').textContent=bookings.filter(x=>x.status==='جديد').length;document.getElementById('doneCount').textContent=bookings.filter(x=>x.status==='مكتمل').length;localStorage.setItem('kamlin_bookings',JSON.stringify(bookings));}
-window.statusChange=(id,s)=>{bookings=bookings.map(x=>x.id===id?{...x,status:s}:x);render()};window.removeItem=id=>{if(confirm('حذف هذا الطلب؟')){bookings=bookings.filter(x=>x.id!==id);render()}};
-document.getElementById('clearBtn').onclick=()=>{if(confirm('سيتم حذف جميع الطلبات من هذا الجهاز.')){bookings=[];render()}};
-document.getElementById('exportBtn').onclick=()=>{if(!bookings.length)return alert('لا توجد بيانات');const heads=['التاريخ','الاسم','الهاتف','الخدمة','المنطقة','المساحة','الموعد','الملاحظات','الحالة'];const lines=[heads,...bookings.map(b=>[b.createdAt,b.name,b.phone,b.service,b.area,b.size,b.date,b.notes,b.status])].map(r=>r.map(v=>`"${String(v||'').replaceAll('"','""')}"`).join(','));const blob=new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='kamlin-bookings.csv';a.click()};render();
-</script></body></html>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>لوحة إدارة كاملين</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,Tahoma,sans-serif;
+  background:#f3f7f8;
+  color:#16363a
+}
+header{
+  background:#073b40;
+  color:white;
+  padding:18px
+}
+header .wrap{
+  max-width:1200px;
+  margin:auto;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px
+}
+header h1{margin:0;font-size:22px}
+header a{
+  color:white;
+  text-decoration:none;
+  background:#00aeb8;
+  padding:10px 16px;
+  border-radius:12px
+}
+.container{
+  width:min(1200px,94%);
+  margin:25px auto
+}
+.stats{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:15px;
+  margin-bottom:20px
+}
+.stat{
+  background:white;
+  padding:20px;
+  border-radius:18px;
+  box-shadow:0 8px 25px #0000000c
+}
+.stat b{
+  display:block;
+  font-size:28px;
+  color:#00aeb8
+}
+.tabs{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-bottom:20px
+}
+.tabs button{
+  border:0;
+  background:white;
+  padding:12px 17px;
+  border-radius:12px;
+  cursor:pointer;
+  font-weight:bold
+}
+.tabs button.active{
+  background:#00aeb8;
+  color:white
+}
+.panel{
+  display:none;
+  background:white;
+  padding:20px;
+  border-radius:18px;
+  box-shadow:0 8px 25px #0000000c
+}
+.panel.active{display:block}
+.toolbar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:18px
+}
+button{
+  font:inherit
+}
+.btn{
+  border:0;
+  border-radius:10px;
+  padding:10px 15px;
+  cursor:pointer;
+  font-weight:bold
+}
+.primary{background:#00aeb8;color:white}
+.dark{background:#073b40;color:white}
+.danger{background:#d33;color:white}
+.gray{background:#e9eff0}
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:750px
+}
+.table-wrap{overflow:auto}
+th,td{
+  border-bottom:1px solid #e6eeee;
+  padding:12px;
+  text-align:right
+}
+th{background:#f6fafb}
+.badge{
+  display:inline-block;
+  padding:6px 10px;
+  border-radius:20px;
+  font-size:12px;
+  background:#e8f7f8
+}
+input,select,textarea{
+  width:100%;
+  padding:12px;
+  border:1px solid #d9e5e6;
+  border-radius:10px;
+  font:inherit
+}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px
+}
+.card{
+  border:1px solid #e1eaeb;
+  padding:15px;
+  border-radius:14px;
+  margin-bottom:12px
+}
+.empty{
+  text-align:center;
+  padding:40px;
+  color:#768b8e
+}
+footer{
+  text-align:center;
+  color:#75878a;
+  padding:30px
+}
+@media(max-width:760px){
+  .stats{grid-template-columns:1fr 1fr}
+  .grid{grid-template-columns:1fr}
+  header .wrap{align-items:flex-start;flex-direction:column}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="wrap">
+    <div>
+      <h1>لوحة إدارة كاملين</h1>
+      <small>Kamlin Cleaning Management</small>
+    </div>
+
+    <a href="index.html">عرض الموقع</a>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="stats">
+    <div class="stat">
+      <span>الطلبات</span>
+      <b id="bookingCount">0</b>
+    </div>
+
+    <div class="stat">
+      <span>العمال</span>
+      <b id="workerCount">0</b>
+    </div>
+
+    <div class="stat">
+      <span>المهام</span>
+      <b id="taskCount">0</b>
+    </div>
+
+    <div class="stat">
+      <span>الأدوات</span>
+      <b id="toolCount">0</b>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="active" data-tab="bookings">الطلبات</button>
+    <button data-tab="workers">العمال</button>
+    <button data-tab="tasks">المهام</button>
+    <button data-tab="tools">الأدوات</button>
+    <button data-tab="settings">الإعدادات</button>
+  </div>
+
+  <!-- BOOKINGS -->
+
+  <section class="panel active" id="bookings">
+
+    <div class="toolbar">
+      <h2>طلبات العملاء</h2>
+
+      <div>
+        <button class="btn dark" onclick="exportBookings()">تصدير الطلبات</button>
+        <button class="btn danger" onclick="clearBookings()">مسح الطلبات</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>الاسم</th>
+            <th>الهاتف</th>
+            <th>الخدمة</th>
+            <th>التاريخ</th>
+            <th>الحالة</th>
+            <th>تواصل</th>
+          </tr>
+        </thead>
+
+        <tbody id="bookingRows"></tbody>
+      </table>
+    </div>
+
+    <div class="empty" id="bookingEmpty">
+      لا توجد طلبات محفوظة حتى الآن
+    </div>
+
+  </section>
+
+  <!-- WORKERS -->
+
+  <section class="panel" id="workers">
+
+    <div class="toolbar">
+      <h2>إدارة العمال</h2>
+    </div>
+
+    <div class="grid">
+
+      <input id="workerName" placeholder="اسم العامل">
+
+      <input id="workerPhone" placeholder="رقم الهاتف">
+
+      <select id="workerStatus">
+        <option value="متاح">متاح</option>
+        <option value="في مهمة">في مهمة</option>
+        <option value="إجازة">إجازة</option>
+      </select>
+
+      <button class="btn primary" onclick="addWorker()">
+        إضافة العامل
+      </button>
+
+    </div>
+
+    <div id="workerList" style="margin-top:20px"></div>
+
+  </section>
+
+  <!-- TASKS -->
+
+  <section class="panel" id="tasks">
+
+    <h2>المهام اليومية</h2>
+
+    <div class="grid">
+
+      <input id="taskTitle" placeholder="وصف المهمة">
+
+      <input id="taskLocation" placeholder="الموقع">
+
+      <input id="taskWorker" placeholder="اسم العامل">
+
+      <input id="taskDate" type="date">
+
+      <button class="btn primary" onclick="addTask()">
+        إضافة المهمة
+      </button>
+
+    </div>
+
+    <div id="taskList" style="margin-top:20px"></div>
+
+  </section>
+
+  <!-- TOOLS -->
+
+  <section class="panel" id="tools">
+
+    <h2>إدارة الأدوات والمعدات</h2>
+
+    <div class="grid">
+
+      <input id="toolName" placeholder="اسم الأداة">
+
+      <input id="toolQty" type="number" placeholder="الكمية">
+
+      <input id="toolHolder" placeholder="مستلم الأداة">
+
+      <button class="btn primary" onclick="addTool()">
+        إضافة الأداة
+      </button>
+
+    </div>
+
+    <div id="toolList" style="margin-top:20px"></div>
+
+  </section>
+
+  <!-- SETTINGS -->
+
+  <section class="panel" id="settings">
+
+    <h2>بيانات الشركة</h2>
+
+    <div class="grid">
+
+      <div>
+        <label>اسم الشركة</label>
+        <input value="كاملين للنظافة الفائقة" readonly>
+      </div>
+
+      <div>
+        <label>رقم الهاتف</label>
+        <input value="+20 103 043 8805" readonly>
+      </div>
+
+      <div>
+        <label>واتساب</label>
+        <input value="+20 101 042 0272" readonly>
+      </div>
+
+      <div>
+        <label>البريد الإلكتروني</label>
+        <input value="kamlin.eg2025@gmail.com" readonly>
+      </div>
+
+    </div>
+
+    <p style="margin-top:20px;color:#74878a">
+      هذه النسخة تحفظ البيانات داخل المتصفح مؤقتًا.
+      سنربطها لاحقًا بقاعدة بيانات حتى تظهر الطلبات من كل الأجهزة.
+    </p>
+
+  </section>
+
+</div>
+
+<footer>
+© كاملين للنظافة الفائقة
+</footer>
+
+<script>
+
+const getData = (key) => {
+  try {
+    return JSON.parse(localStorage.getItem(key) || "[]");
+  } catch {
+    return [];
+  }
+};
+
+const saveData = (key,data) => {
+  localStorage.setItem(key,JSON.stringify(data));
+};
+
+let bookings =
+  getData("kamlin_bookings").length
+    ? getData("kamlin_bookings")
+    : getData("bookings");
+
+let workers = getData("kamlin_workers");
+let tasks = getData("kamlin_tasks");
+let tools = getData("kamlin_tools");
+
+
+/* Tabs */
+
+document.querySelectorAll(".tabs button").forEach(btn => {
+
+  btn.onclick = () => {
+
+    document
+      .querySelectorAll(".tabs button")
+      .forEach(b => b.classList.remove("active"));
+
+    document
+      .querySelectorAll(".panel")
+      .forEach(p => p.classList.remove("active"));
+
+    btn.classList.add("active");
+
+    document
+      .getElementById(btn.dataset.tab)
+      .classList.add("active");
+  };
+
+});
+
+
+/* BOOKINGS */
+
+function renderBookings(){
+
+  const rows = document.getElementById("bookingRows");
+  const empty = document.getElementById("bookingEmpty");
+
+  rows.innerHTML = "";
+
+  empty.style.display =
+    bookings.length ? "none" : "block";
+
+  bookings.forEach((b,i) => {
+
+    const phone = b.phone || "";
+
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+
+      <td>${b.name || "-"}</td>
+
+      <td>${phone || "-"}</td>
+
+      <td>${b.service || "-"}</td>
+
+      <td>${b.date || b.createdAt || "-"}</td>
+
+      <td>
+
+        <select onchange="changeBookingStatus(${i},this.value)">
+
+          <option ${b.status==="جديد"?"selected":""}>
+            جديد
+          </option>
+
+          <option ${b.status==="تم التواصل"?"selected":""}>
+            تم التواصل
+          </option>
+
+          <option ${b.status==="مؤكد"?"selected":""}>
+            مؤكد
+          </option>
+
+          <option ${b.status==="مكتمل"?"selected":""}>
+            مكتمل
+          </option>
+
+        </select>
+
+      </td>
+
+      <td>
+
+        ${
+          phone
+          ? `<a target="_blank"
+              href="https://wa.me/${phone.replace(/\D/g,"")}">
+              واتساب
+             </a>`
+          : "-"
+        }
+
+      </td>
+    `;
+
+    rows.appendChild(tr);
+
+  });
+
+  updateStats();
+}
+
+
+function changeBookingStatus(index,status){
+
+  bookings[index].status = status;
+
+  saveData("kamlin_bookings",bookings);
+
+}
+
+
+function clearBookings(){
+
+  if(!confirm("هل تريد مسح جميع الطلبات؟"))
+    return;
+
+  bookings = [];
+
+  saveData("kamlin_bookings",bookings);
+
+  renderBookings();
+}
+
+
+function exportBookings(){
+
+  const data =
+    JSON.stringify(bookings,null,2);
+
+  const blob =
+    new Blob([data],{
+      type:"application/json"
+    });
+
+  const url =
+    URL.createObjectURL(blob);
+
+  const a =
+    document.createElement("a");
+
+  a.href = url;
+
+  a.download =
+    "kamlin-bookings.json";
+
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+
+/* WORKERS */
+
+function addWorker(){
+
+  const name =
+    document.getElementById("workerName").value.trim();
+
+  if(!name)
+    return alert("اكتب اسم العامل");
+
+  workers.push({
+
+    name,
+
+    phone:
+      document.getElementById("workerPhone").value,
+
+    status:
+      document.getElementById("workerStatus").value
+
+  });
+
+  saveData("kamlin_workers",workers);
+
+  document.getElementById("workerName").value="";
+  document.getElementById("workerPhone").value="";
+
+  renderWorkers();
+}
+
+
+function removeWorker(i){
+
+  workers.splice(i,1);
+
+  saveData("kamlin_workers",workers);
+
+  renderWorkers();
+}
+
+
+function renderWorkers(){
+
+  const box =
+    document.getElementById("workerList");
+
+  box.innerHTML="";
+
+  workers.forEach((w,i)=>{
+
+    const div =
+      document.createElement("div");
+
+    div.className="card";
+
+    div.innerHTML=`
+
+      <b>${w.name}</b>
+
+      <p>${w.phone || ""}</p>
+
+      <span class="badge">
+        ${w.status}
+      </span>
+
+      <br><br>
+
+      <button class="btn danger"
+        onclick="removeWorker(${i})">
+        حذف
+      </button>
+    `;
+
+    box.appendChild(div);
+
+  });
+
+  updateStats();
+}
+
+
+/* TASKS */
+
+function addTask(){
+
+  const title =
+    document.getElementById("taskTitle").value.trim();
+
+  if(!title)
+    return alert("اكتب المهمة");
+
+  tasks.push({
+
+    title,
+
+    location:
+      document.getElementById("taskLocation").value,
+
+    worker:
+      document.getElementById("taskWorker").value,
+
+    date:
+      document.getElementById("taskDate").value,
+
+    done:false
+
+  });
+
+  saveData("kamlin_tasks",tasks);
+
+  renderTasks();
+}
+
+
+function toggleTask(i){
+
+  tasks[i].done =
+    !tasks[i].done;
+
+  saveData("kamlin_tasks",tasks);
+
+  renderTasks();
+}
+
+
+function removeTask(i){
+
+  tasks.splice(i,1);
+
+  saveData("kamlin_tasks",tasks);
+
+  renderTasks();
+}
+
+
+function renderTasks(){
+
+  const box =
+    document.getElementById("taskList");
+
+  box.innerHTML="";
+
+  tasks.forEach((t,i)=>{
+
+    const div =
+      document.createElement("div");
+
+    div.className="card";
+
+    div.innerHTML=`
+
+      <b>
+        ${t.done ? "✅ " : ""}
+        ${t.title}
+      </b>
+
+      <p>
+        ${t.location || ""}
+        ${t.worker ? " — "+t.worker : ""}
+      </p>
+
+      <small>
+        ${t.date || ""}
+      </small>
+
+      <br><br>
+
+      <button class="btn primary"
+        onclick="toggleTask(${i})">
+
+        ${t.done ? "إعادة فتح" : "تم التنفيذ"}
+
+      </button>
+
+      <button class="btn danger"
+        onclick="removeTask(${i})">
+        حذف
+      </button>
+    `;
+
+    box.appendChild(div);
+
+  });
+
+  updateStats();
+}
+
+
+/* TOOLS */
+
+function addTool(){
+
+  const name =
+    document.getElementById("toolName").value.trim();
+
+  if(!name)
+    return alert("اكتب اسم الأداة");
+
+  tools.push({
+
+    name,
+
+    qty:
+      document.getElementById("toolQty").value || 1,
+
+    holder:
+      document.getElementById("toolHolder").value
+
+  });
+
+  saveData("kamlin_tools",tools);
+
+  renderTools();
+}
+
+
+function removeTool(i){
+
+  tools.splice(i,1);
+
+  saveData("kamlin_tools",tools);
+
+  renderTools();
+}
+
+
+function renderTools(){
+
+  const box =
+    document.getElementById("toolList");
+
+  box.innerHTML="";
+
+  tools.forEach((t,i)=>{
+
+    const div =
+      document.createElement("div");
+
+    div.className="card";
+
+    div.innerHTML=`
+
+      <b>${t.name}</b>
+
+      <p>الكمية: ${t.qty}</p>
+
+      <p>
+        المستلم:
+        ${t.holder || "غير محدد"}
+      </p>
+
+      <button class="btn danger"
+        onclick="removeTool(${i})">
+        حذف
+      </button>
+    `;
+
+    box.appendChild(div);
+
+  });
+
+  updateStats();
+}
+
+
+/* Stats */
+
+function updateStats(){
+
+  document.getElementById("bookingCount")
+    .textContent = bookings.length;
+
+  document.getElementById("workerCount")
+    .textContent = workers.length;
+
+  document.getElementById("taskCount")
+    .textContent = tasks.length;
+
+  document.getElementById("toolCount")
+    .textContent = tools.length;
+}
+
+
+/* Initial render */
+
+renderBookings();
+renderWorkers();
+renderTasks();
+renderTools();
+
+</script>
+
+</body>
+</html>
