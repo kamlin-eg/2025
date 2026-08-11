@@ -1,8 +1,50 @@
-const ADMIN_PASSWORD="We are one team";const LOGIN_SESSION_KEY="kamlin_admin_authenticated";
+const SUPABASE_URL = "https://hxphmxkimjxngsrlxcjn.supabase.co";
+const SUPABASE_KEY = "sb_publishable_V-vK8enWv_NNYbigWPSkhA_gq-D8s0t";
+const ADMIN_EMAIL = "kamlin.eg2025@gmail.com";
+
+const sb = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);const LOGIN_SESSION_KEY="kamlin_admin_authenticated";
 const KEYS={bookings:"kamlin_bookings",workers:"kamlin_workers",assignments:"kamlin_assignments",attendance:"kamlin_attendance",tools:"kamlin_tools"};
 const load=k=>{try{return JSON.parse(localStorage.getItem(k)||"[]")}catch{return[]}};const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 let bookings=load(KEYS.bookings).map(x=>({...x,status:x.status==="ملغي"?"ملغى":x.status})),workers=load(KEYS.workers),assignments=load(KEYS.assignments),attendance=load(KEYS.attendance),tools=load(KEYS.tools);
-function initAdminLogin(){const s=document.getElementById('adminLogin'),f=document.getElementById('adminLoginForm'),p=document.getElementById('adminPassword'),e=document.getElementById('loginError');if(sessionStorage.getItem(LOGIN_SESSION_KEY)==='1')s.classList.add('hidden');f.addEventListener('submit',x=>{x.preventDefault();if(p.value===ADMIN_PASSWORD){sessionStorage.setItem(LOGIN_SESSION_KEY,'1');e.textContent='';p.value='';s.classList.add('hidden')}else{e.textContent='كلمة المرور غير صحيحة.';p.value='';p.focus()}});document.getElementById('logoutBtn').onclick=()=>{sessionStorage.removeItem(LOGIN_SESSION_KEY);location.reload()}}
+async function initAdminLogin() {
+  const loginScreen = document.getElementById("adminLogin");
+  const loginForm = document.getElementById("adminLoginForm");
+  const passwordInput = document.getElementById("adminPassword");
+
+  const { data: { session } } = await sb.auth.getSession();
+
+  if (session) {
+    loginScreen.style.display = "none";
+    localStorage.setItem(LOGIN_SESSION_KEY, "true");
+  } else {
+    loginScreen.style.display = "flex";
+    localStorage.removeItem(LOGIN_SESSION_KEY);
+  }
+
+  loginForm.onsubmit = async (e) => {
+    e.preventDefault();
+
+    const password = passwordInput.value;
+
+    const { error } = await sb.auth.signInWithPassword({
+      email: ADMIN_EMAIL,
+      password: password
+    });
+
+    if (error) {
+      passwordInput.value = "";
+      alert("كلمة المرور غير صحيحة");
+      return;
+    }
+
+    localStorage.setItem(LOGIN_SESSION_KEY, "true");
+    loginScreen.style.display = "none";
+    passwordInput.value = "";
+  };
+}
 function switchView(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.nav-link[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===id));document.getElementById(id)?.classList.add('active');renderAll()}
 document.querySelectorAll('.nav-link[data-view]').forEach(b=>b.onclick=()=>switchView(b.dataset.view));
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));const id=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);const today=()=>new Date().toISOString().slice(0,10);
