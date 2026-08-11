@@ -70,4 +70,14 @@ function renderContracts(){const a=bookings.filter(x=>Number(x.quote)>0);documen
 function csv(){const rows=[['التاريخ','العميل','الهاتف','الخدمة','المنطقة','الحالة'],...bookings.map(x=>[x.date,x.name,x.phone,x.service,x.area,x.status])];const blob=new Blob(['\ufeff'+rows.map(r=>r.map(v=>'"'+String(v||'').replaceAll('"','""')+'"').join(',')).join('\n')],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='kamlin-bookings.csv';a.click();URL.revokeObjectURL(a.href)}
 document.getElementById('exportBookings').onclick=csv;document.getElementById('clearBookings').onclick=()=>{if(confirm('هل تريد حذف كل الطلبات؟')){bookings=[];save(KEYS.bookings,bookings);renderAll()}};document.getElementById('searchInput').oninput=renderBookings;document.getElementById('statusFilter').onchange=renderBookings;
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>document.getElementById(b.dataset.close).close());document.querySelectorAll('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target===d)d.close()}));document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('dialog[open]').forEach(d=>d.close())});
+async function logout() {
+  await sb.auth.signOut();
+  localStorage.removeItem(LOGIN_SESSION_KEY);
+  window.location.reload();
+}
+
+const logoutBtn = document.getElementById("logoutBtn");
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", logout);
+}
 initAdminLogin();renderAll();
