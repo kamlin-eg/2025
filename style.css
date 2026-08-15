@@ -7,7 +7,13 @@
 a{text-decoration:none;color:inherit}.container{width:min(1180px,92%);margin:auto}
 .topbar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 .nav{min-height:76px;display:flex;align-items:center;justify-content:space-between;gap:24px}.brand{display:flex;align-items:center;gap:10px}
-.brand-mark{width:44px;height:44px;display:grid;place-items:center;border-radius:14px;background:var(--turq);color:white;font-weight:800;font-size:25px}
+.brand-mark{
+  width:90px;
+  height:65px;
+  object-fit:contain;
+  object-position:center;
+  flex-shrink:0;
+}
 .brand strong{display:block;font-size:22px;color:var(--navy)}.brand small{display:block;color:var(--muted);font-size:11px}
 nav{display:flex;align-items:center;gap:22px;font-weight:700;font-size:14px}nav a:hover{color:var(--turq-dark)}.nav-cta{background:var(--turq);color:white!important;padding:10px 16px;border-radius:12px}
 .menu-btn{display:none;border:0;background:none;font-size:26px}
