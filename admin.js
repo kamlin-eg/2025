@@ -80,4 +80,62 @@ const logoutBtn = document.getElementById("logoutBtn");
 if (logoutBtn) {
   logoutBtn.addEventListener("click", logout);
 }
+const PRICE_STORAGE_KEY = "kamlin_prices";
+
+const PRICE_FIELDS = [
+  "priceRegular",
+  "priceDeep",
+  "priceConstruction",
+  "priceVillas",
+  "priceCompanies",
+  "priceClinics",
+  "priceSofa",
+  "priceMattress",
+  "priceDisinfectSmall",
+  "priceDisinfectMedium",
+  "priceDisinfectLarge",
+  "priceAnts",
+  "priceCockroaches",
+  "priceFlying",
+  "priceRodents",
+  "priceBedbugs",
+  "priceEconomic",
+  "priceComplete",
+  "priceShine",
+  "priceRoyal",
+  "priceMonthly4",
+  "priceMonthly8",
+  "priceMonthly12"
+];
+
+function loadPrices() {
+  const saved = JSON.parse(localStorage.getItem(PRICE_STORAGE_KEY) || "{}");
+
+  PRICE_FIELDS.forEach(id => {
+    const input = document.getElementById(id);
+    if (input && saved[id] !== undefined) {
+      input.value = saved[id];
+    }
+  });
+}
+
+function savePrices() {
+  const prices = {};
+
+  PRICE_FIELDS.forEach(id => {
+    const input = document.getElementById(id);
+    if (input) prices[id] = input.value;
+  });
+
+  localStorage.setItem(PRICE_STORAGE_KEY, JSON.stringify(prices));
+  alert("✅ تم حفظ الأسعار بنجاح");
+}
+
+const savePricesBtn = document.getElementById("savePricesBtn");
+
+if (savePricesBtn) {
+  savePricesBtn.addEventListener("click", savePrices);
+}
+
+loadPrices();
 initAdminLogin();renderAll();

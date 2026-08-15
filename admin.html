@@ -9,7 +9,7 @@
 </head><body>
 <div id="adminLogin" class="login-screen"><form id="adminLoginForm" class="login-box" autocomplete="off"><div class="login-logo">K</div><h2>دخول الإدارة</h2><input id="adminPassword" type="password" placeholder="كلمة المرور" autocomplete="current-password" required><button class="primary login-submit" type="submit">دخول</button><div id="loginError" class="login-error" aria-live="polite"></div></form></div>
 <aside class="sidebar"><div class="brand"><span>K</span><div><b>كاملين</b><small>نظام الإدارة</small></div></div>
-<button class="nav-link active" data-view="dashboard">📊 لوحة التحكم</button><button class="nav-link" data-view="bookings">📥 الطلبات</button><button class="nav-link" data-view="workers">👷 العمال</button><button class="nav-link" data-view="assignments">📋 التكليفات</button><button class="nav-link" data-view="attendance">🕒 الحضور</button><button class="nav-link" data-view="tools">🧰 تسليم الأدوات</button><button class="nav-link" data-view="customers">👥 العملاء</button><button class="nav-link" data-view="followups">🔄 المتابعات والضمان</button><button class="nav-link" data-view="contracts">📄 العقود والعروض</button><a class="nav-link" href="index.html">🌐 عرض الموقع</a><button class="nav-link" id="logoutBtn">🚪 خروج</button></aside>
+<button class="nav-link active" data-view="dashboard">📊 لوحة التحكم</button><button class="nav-link" data-view="bookings">📥 الطلبات</button><button class="nav-link" data-view="workers">👷 العمال</button><button class="nav-link" data-view="assignments">📋 التكليفات</button><button class="nav-link" data-view="attendance">🕒 الحضور</button><button class="nav-link" data-view="tools">🧰 تسليم الأدوات</button><button class="nav-link" data-view="customers">👥 العملاء</button><button class="nav-link" data-view="followups">🔄 المتابعات والضمان</button><button class="nav-link" data-view="contracts">📄 العقود والعروض</button><a class="nav-link" href="index.html">🌐 عرض الموقع</a><button class="nav-link" id="logoutBtn">🚪 خروج</button><button class="nav-link" data-view="prices">💰 الخدمات والأسعار</button></aside>
 <main class="admin-main"><header class="admin-top"><div><h1>لوحة التحكم</h1><p>إدارة الطلبات والعمال والتكليفات والحضور والأدوات من مكان واحد</p></div><button class="primary" onclick="openNewBooking()">+ طلب جديد</button></header>
 <section id="dashboard" class="view active"><div class="kpis"><div><span>إجمالي الطلبات</span><strong id="kpiTotal">0</strong></div><div><span>طلبات جديدة</span><strong id="kpiNew">0</strong></div><div><span>العمال</span><strong id="kpiWorkers">0</strong></div><div><span>متابعات قادمة</span><strong id="kpiFollow">0</strong></div></div><div class="grid-two"><div class="panel"><div class="panel-head"><h3>أحدث الطلبات</h3><button onclick="switchView('bookings')">عرض الكل</button></div><div id="latestBookings"></div></div><div class="panel"><h3>توزيع الحالات</h3><div id="statusSummary" class="status-summary"></div></div></div></section>
 <section id="bookings" class="view"><div class="panel"><div class="panel-head wrap"><h3>طلبات العملاء</h3><div class="filters"><input id="searchInput" placeholder="بحث بالاسم أو الهاتف أو الخدمة"><select id="statusFilter"><option value="">كل الحالات</option><option>جديد</option><option>تم التواصل</option><option>معاينة</option><option>عرض سعر</option><option>مؤكد</option><option>قيد التنفيذ</option><option>مكتمل</option><option>ملغى</option></select><button id="exportBookings" class="secondary">تصدير CSV</button><button id="clearBookings" class="danger">حذف الكل</button></div></div><div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>العميل</th><th>الهاتف</th><th>الخدمة</th><th>المنطقة</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="bookingRows"></tbody></table></div></div></section>
@@ -20,6 +20,119 @@
 <section id="customers" class="view"><div class="panel"><h3>سجل العملاء</h3><div class="table-wrap"><table><thead><tr><th>العميل</th><th>الهاتف</th><th>عدد الطلبات</th><th>آخر خدمة</th><th>آخر حالة</th></tr></thead><tbody id="customerRows"></tbody></table></div></div></section>
 <section id="followups" class="view"><div class="panel"><h3>المتابعات والضمانات</h3><div class="table-wrap"><table><thead><tr><th>العميل</th><th>الخدمة</th><th>موعد المتابعة</th><th>الضمان / الملاحظة</th><th>الحالة</th></tr></thead><tbody id="followRows"></tbody></table></div></div></section>
 <section id="contracts" class="view"><div class="panel"><h3>العروض والعقود</h3><div class="table-wrap"><table><thead><tr><th>العميل</th><th>الخدمة</th><th>القيمة</th><th>الحالة</th><th>رقم الطلب</th></tr></thead><tbody id="contractRows"></tbody></table></div></div></section>
+<section id="prices" class="view">
+  <div class="panel">
+    <h3>💰 الخدمات والأسعار</h3>
+
+    <h4>🏠 خدمات التنظيف</h4>
+
+    <label>التنظيف العادي
+      <input type="number" id="priceRegular" value="850">
+    </label>
+
+    <label>التنظيف العميق
+      <input type="number" id="priceDeep" value="1200">
+    </label>
+
+    <label>تنظيف ما بعد التشطيب
+      <input type="number" id="priceConstruction" value="1800">
+    </label>
+
+    <label>الفلل والمساحات الكبيرة
+      <input type="number" id="priceVillas" value="2500">
+    </label>
+
+    <label>الشركات والمكاتب
+      <input type="number" id="priceCompanies" value="1500">
+    </label>
+
+    <label>العيادات والمراكز الطبية
+      <input type="number" id="priceClinics" value="1500">
+    </label>
+
+    <h4>🛋️ المفروشات</h4>
+
+    <label>تنظيف الكنب
+      <input type="number" id="priceSofa" value="600">
+    </label>
+
+    <label>تنظيف المرتبة
+      <input type="number" id="priceMattress" value="350">
+    </label>
+
+    <h4>🧼 التعقيم والتطهير</h4>
+
+    <label>شقة صغيرة
+      <input type="number" id="priceDisinfectSmall" value="600">
+    </label>
+
+    <label>شقة متوسطة
+      <input type="number" id="priceDisinfectMedium" value="800">
+    </label>
+
+    <label>فيلا أو مساحة كبيرة
+      <input type="number" id="priceDisinfectLarge" value="1200">
+    </label>
+
+    <h4>🐜 مكافحة الحشرات والآفات</h4>
+
+    <label>النمل والحشرات الزاحفة
+      <input type="number" id="priceAnts" value="600">
+    </label>
+
+    <label>الصراصير
+      <input type="number" id="priceCockroaches" value="700">
+    </label>
+
+    <label>الحشرات الطائرة
+      <input type="number" id="priceFlying" value="700">
+    </label>
+
+    <label>القوارض
+      <input type="number" id="priceRodents" value="900">
+    </label>
+
+    <label>بق الفراش
+      <input type="number" id="priceBedbugs" value="1200">
+    </label>
+
+    <h4>📦 باقات كاملين</h4>
+
+    <label>الاقتصادية
+      <input type="number" id="priceEconomic" value="850">
+    </label>
+
+    <label>الشاملة
+      <input type="number" id="priceComplete" value="1200">
+    </label>
+
+    <label>اللمعان
+      <input type="number" id="priceShine" value="1600">
+    </label>
+
+    <label>الملكية
+      <input type="number" id="priceRoyal" value="2500">
+    </label>
+
+    <h4>📅 الاشتراكات الشهرية</h4>
+
+    <label>4 زيارات
+      <input type="number" id="priceMonthly4" value="3000">
+    </label>
+
+    <label>8 زيارات
+      <input type="number" id="priceMonthly8" value="5600">
+    </label>
+
+    <label>12 زيارة
+      <input type="number" id="priceMonthly12" value="7800">
+    </label>
+
+    <button type="button" class="primary" id="savePricesBtn">
+      💾 حفظ جميع الأسعار
+    </button>
+  </div>
+</section>
 </main>
 <dialog id="bookingDialog"><form id="editForm"><div class="dialog-head"><h3 id="dialogTitle">طلب جديد</h3><button type="button" class="x" data-close="bookingDialog">×</button></div><input type="hidden" name="id"><div class="form-grid"><label>اسم العميل<input name="name" required></label><label>الهاتف<input name="phone" required></label><label>الخدمة<input name="service" required></label><label>المنطقة<input name="area"></label><label>الحالة<select name="status"><option>جديد</option><option>تم التواصل</option><option>معاينة</option><option>عرض سعر</option><option>مؤكد</option><option>قيد التنفيذ</option><option>مكتمل</option><option>ملغى</option></select></label><label>المسؤول<input name="assignedTo"></label><label>موعد المتابعة<input type="date" name="followUp"></label><label>قيمة العرض / العقد<input type="number" min="0" step="0.01" name="quote"></label><label class="wide">الضمان / خطة المتابعة<input name="warranty"></label><label class="wide">ملاحظات<textarea name="notes" rows="4"></textarea></label></div><div class="dialog-actions"><button type="button" class="secondary" data-close="bookingDialog">إلغاء</button><button class="primary" type="submit">حفظ</button></div></form></dialog>
 <dialog id="genericDialog"><form id="genericForm"><div class="dialog-head"><h3 id="genericTitle"></h3><button type="button" class="x" data-close="genericDialog">×</button></div><div id="genericFields" class="form-grid"></div><div class="dialog-actions"><button type="button" class="secondary" data-close="genericDialog">إلغاء</button><button class="primary" type="submit">حفظ</button></div></form></dialog>
