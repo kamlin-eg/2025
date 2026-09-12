@@ -108,18 +108,63 @@ const PRICE_FIELDS = [
   "priceMonthly12"
 ];
 
-function loadPrices() {
-  const saved = JSON.parse(localStorage.getItem(PRICE_STORAGE_KEY) || "{}");
+async function loadPrices() {
+  try {
+    const { data, error } = await sb
+      .from("site_settings")
+      .select("value")
+      .eq("key", "prices")
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data || !data.value) return;
+
+    const saved = data.value;
+
+    PRICE_FIELDS.forEach(id => {
+      const input = document.getElementById(id);
+
+      if (input && saved[id] !== undefined) {
+        input.value = saved[id];
+      }
+    });
+
+  } catch (error) {
+    console.error("خطأ في تحميل الأسعار:", error);
+  }
+}
+
+
+async function savePrices() {
+  const prices = {};
 
   PRICE_FIELDS.forEach(id => {
     const input = document.getElementById(id);
-    if (input && saved[id] !== undefined) {
-      input.value = saved[id];
+
+    if (input) {
+      prices[id] = input.value;
     }
   });
-}
 
-function savePrices() {
+  try {
+    const { error } = await sb
+      .from("site_settings")
+      .upsert({
+        key: "prices",
+        value: prices,
+        updated_at: new Date().toISOString()
+      });
+
+    if (error) throw error;
+
+    alert("✅ تم حفظ الأسعار في قاعدة البيانات بنجاح");
+
+  } catch (error) {
+    console.error(error);
+    alert("❌ لم يتم حفظ الأسعار: " + error.message);
+  }
+}{
   const prices = {};
 
   PRICE_FIELDS.forEach(id => {
