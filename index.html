@@ -23,6 +23,7 @@
       <button class="menu-btn" aria-label="فتح القائمة" onclick="toggleMenu()">☰</button>
       <nav id="mainNav">
         <a href="#services">الخدمات</a>
+        <a href="#prices">الأسعار</a>
         <a href="#pest">مكافحة الحشرات</a>
         <a href="#why">لماذا كاملين؟</a>
         <a href="#process">طريقة العمل</a>
@@ -117,6 +118,8 @@
         </div>
       </div>
     </section>
+
+<section id="prices" class="section alt"><div class="container"><div class="section-head"><span class="eyebrow">الخدمات والباقات</span><h2>أسعار كاملين</h2><p>الأسعار بالجنيه المصري. السعر النهائي يتحدد حسب المساحة والحالة ونطاق الخدمة.</p><p id="publicPricesStatus" role="status" aria-live="polite">جارٍ تحميل الأسعار…</p><button type="button" id="retryPricesBtn" class="btn ghost">تحديث الأسعار</button></div><h3>خدمات التنظيف</h3><div class="cards three"><article class="card"><h3>التنظيف العادي</h3><p><strong data-price="priceRegular">تواصل معنا لمعرفة السعر</strong></p></article><article class="card"><h3>التنظيف العميق</h3><p><strong data-price="priceDeep">تواصل معنا لمعرفة السعر</strong></p></article><article class="card"><h3>تنظيف ما بعد التشطيب</h3><p><strong data-price="priceConstruction">تواصل معنا لمعرفة السعر</strong></p></article><article class="card"><h3>الفلل والمساحات الكبيرة</h3><p><strong data-price="priceVillas">تواصل معنا لمعرفة السعر</strong></p></article><article class="card"><h3>الشركات والمكاتب</h3><p><strong data-price="priceCompanies">تواصل معنا لمعرفة السعر</strong></p></article><article class="card"><h3>العيادات والمراكز الطبية</h3><p><strong data-price="priceClinics">تواصل معنا لمعرفة السعر</strong></p></article></div><h3>المفروشات</h3><div class="cards three"><article class="card"><h3>تنظيف الكنب</h3><p><strong data-price="priceSofa">تواصل معنا لمعرفة السعر</strong></p></article><article class="card"><h3>تنظيف المرتبة</h3><p><strong data-price="priceMattress">تواصل معنا لمعرفة السعر</strong></p></article></div><h3>التعقيم والتطهير</h3><div class="cards three"><article class="card"><h3>شقة صغيرة</h3><p><strong data-price="priceDisinfectSmall">تواصل معنا لمعرفة السعر</strong></p></article><article class="card"><h3>شقة متوسطة</h3><p><strong data-price="priceDisinfectMedium">تواصل معنا لمعرفة السعر</strong></p></article><article class="card"><h3>فيلا أو مساحة كبيرة</h3><p><strong data-price="priceDisinfectLarge">تواصل معنا لمعرفة السعر</strong></p></article></div><h3>مكافحة الحشرات والآفات</h3><div class="cards three"><article class="card"><h3>النمل والحشرات الزاحفة</h3><p><strong data-price="priceAnts">تواصل معنا لمعرفة السعر</strong></p></article><article class="card"><h3>الصراصير</h3><p><strong data-price="priceCockroaches">تواصل معنا لمعرفة السعر</strong></p></article><article class="card"><h3>الحشرات الطائرة</h3><p><strong data-price="priceFlying">تواصل معنا لمعرفة السعر</strong></p></article><article class="card"><h3>القوارض</h3><p><strong data-price="priceRodents">تواصل معنا لمعرفة السعر</strong></p></article><article class="card"><h3>بق الفراش</h3><p><strong data-price="priceBedbugs">تواصل معنا لمعرفة السعر</strong></p></article></div><h3>باقات كاملين</h3><div class="cards three"><article class="card"><h3>الاقتصادية</h3><p><strong data-price="priceEconomic">تواصل معنا لمعرفة السعر</strong></p></article><article class="card"><h3>الشاملة</h3><p><strong data-price="priceComplete">تواصل معنا لمعرفة السعر</strong></p></article><article class="card"><h3>اللمعان</h3><p><strong data-price="priceShine">تواصل معنا لمعرفة السعر</strong></p></article><article class="card"><h3>الملكية</h3><p><strong data-price="priceRoyal">تواصل معنا لمعرفة السعر</strong></p></article></div><h3>الاشتراكات الشهرية</h3><div class="cards three"><article class="card"><h3>4 زيارات</h3><p><strong data-price="priceMonthly4">تواصل معنا لمعرفة السعر</strong></p></article><article class="card"><h3>8 زيارات</h3><p><strong data-price="priceMonthly8">تواصل معنا لمعرفة السعر</strong></p></article><article class="card"><h3>12 زيارة</h3><p><strong data-price="priceMonthly12">تواصل معنا لمعرفة السعر</strong></p></article></div><noscript>فعّل JavaScript لعرض الأسعار، أو تواصل معنا مباشرة.</noscript></div></section>
 
     <section id="why" class="section">
       <div class="container">
@@ -241,6 +244,7 @@
     <div class="copyright">© <span id="year"></span> Kamlin Cleaning Services. جميع الحقوق محفوظة.</div>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
 </body>
 </html>

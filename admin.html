@@ -8,9 +8,10 @@
 <link rel="stylesheet" href="admin.css">
 </head><body>
 <div id="adminLogin" class="login-screen"><form id="adminLoginForm" class="login-box" autocomplete="off"><div class="login-logo">K</div><h2>دخول الإدارة</h2><input id="adminPassword" type="password" placeholder="كلمة المرور" autocomplete="current-password" required><button class="primary login-submit" type="submit">دخول</button><div id="loginError" class="login-error" aria-live="polite"></div></form></div>
-<aside class="sidebar"><div class="brand"><span>K</span><div><b>كاملين</b><small>نظام الإدارة</small></div></div>
+<aside class="sidebar" inert><div class="brand"><span>K</span><div><b>كاملين</b><small>نظام الإدارة</small></div></div>
 <button class="nav-link active" data-view="dashboard">📊 لوحة التحكم</button><button class="nav-link" data-view="bookings">📥 الطلبات</button><button class="nav-link" data-view="workers">👷 العمال</button><button class="nav-link" data-view="assignments">📋 التكليفات</button><button class="nav-link" data-view="attendance">🕒 الحضور</button><button class="nav-link" data-view="tools">🧰 تسليم الأدوات</button><button class="nav-link" data-view="customers">👥 العملاء</button><button class="nav-link" data-view="followups">🔄 المتابعات والضمان</button><button class="nav-link" data-view="contracts">📄 العقود والعروض</button><a class="nav-link" href="index.html">🌐 عرض الموقع</a><button class="nav-link" id="logoutBtn">🚪 خروج</button><button class="nav-link" data-view="prices">💰 الخدمات والأسعار</button></aside>
-<main class="admin-main"><header class="admin-top"><div><h1>لوحة التحكم</h1><p>إدارة الطلبات والعمال والتكليفات والحضور والأدوات من مكان واحد</p></div><button class="primary" onclick="openNewBooking()">+ طلب جديد</button></header>
+<main class="admin-main" inert><header class="admin-top"><div><h1>لوحة التحكم</h1><p>إدارة الطلبات والعمال والتكليفات والحضور والأدوات من مكان واحد</p></div><button class="primary" onclick="openNewBooking()">+ طلب جديد</button></header>
+<p role="note">تنبيه: بيانات الطلبات والعمال والتكليفات والحضور والأدوات ما زالت محفوظة في هذا المتصفح فقط. الأسعار تُحفظ في قاعدة البيانات.</p>
 <section id="dashboard" class="view active"><div class="kpis"><div><span>إجمالي الطلبات</span><strong id="kpiTotal">0</strong></div><div><span>طلبات جديدة</span><strong id="kpiNew">0</strong></div><div><span>العمال</span><strong id="kpiWorkers">0</strong></div><div><span>متابعات قادمة</span><strong id="kpiFollow">0</strong></div></div><div class="grid-two"><div class="panel"><div class="panel-head"><h3>أحدث الطلبات</h3><button onclick="switchView('bookings')">عرض الكل</button></div><div id="latestBookings"></div></div><div class="panel"><h3>توزيع الحالات</h3><div id="statusSummary" class="status-summary"></div></div></div></section>
 <section id="bookings" class="view"><div class="panel"><div class="panel-head wrap"><h3>طلبات العملاء</h3><div class="filters"><input id="searchInput" placeholder="بحث بالاسم أو الهاتف أو الخدمة"><select id="statusFilter"><option value="">كل الحالات</option><option>جديد</option><option>تم التواصل</option><option>معاينة</option><option>عرض سعر</option><option>مؤكد</option><option>قيد التنفيذ</option><option>مكتمل</option><option>ملغى</option></select><button id="exportBookings" class="secondary">تصدير CSV</button><button id="clearBookings" class="danger">حذف الكل</button></div></div><div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>العميل</th><th>الهاتف</th><th>الخدمة</th><th>المنطقة</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="bookingRows"></tbody></table></div></div></section>
 <section id="workers" class="view"><div class="panel"><div class="panel-head"><h3>العمال</h3><button class="primary" onclick="openWorker()">+ عامل جديد</button></div><div class="table-wrap"><table><thead><tr><th>الاسم</th><th>الهاتف</th><th>الوظيفة</th><th>الحالة</th><th>ملاحظات</th><th>إجراء</th></tr></thead><tbody id="workerRows"></tbody></table></div></div></section>
@@ -23,112 +24,114 @@
 <section id="prices" class="view">
   <div class="panel">
     <h3>💰 الخدمات والأسعار</h3>
+<p id="pricesStatus" role="status" aria-live="polite">سجّل الدخول لتحميل الأسعار.</p>
+<button type="button" id="reloadPricesBtn">إعادة تحميل الأسعار</button>
 
     <h4>🏠 خدمات التنظيف</h4>
 
     <label>التنظيف العادي
-      <input type="number" id="priceRegular" value="850">
+      <input type="number" min="0" step="0.01" required id="priceRegular" value="850">
     </label>
 
     <label>التنظيف العميق
-      <input type="number" id="priceDeep" value="1200">
+      <input type="number" min="0" step="0.01" required id="priceDeep" value="1200">
     </label>
 
     <label>تنظيف ما بعد التشطيب
-      <input type="number" id="priceConstruction" value="1800">
+      <input type="number" min="0" step="0.01" required id="priceConstruction" value="1800">
     </label>
 
     <label>الفلل والمساحات الكبيرة
-      <input type="number" id="priceVillas" value="2500">
+      <input type="number" min="0" step="0.01" required id="priceVillas" value="2500">
     </label>
 
     <label>الشركات والمكاتب
-      <input type="number" id="priceCompanies" value="1500">
+      <input type="number" min="0" step="0.01" required id="priceCompanies" value="1500">
     </label>
 
     <label>العيادات والمراكز الطبية
-      <input type="number" id="priceClinics" value="1500">
+      <input type="number" min="0" step="0.01" required id="priceClinics" value="1500">
     </label>
 
     <h4>🛋️ المفروشات</h4>
 
     <label>تنظيف الكنب
-      <input type="number" id="priceSofa" value="600">
+      <input type="number" min="0" step="0.01" required id="priceSofa" value="600">
     </label>
 
     <label>تنظيف المرتبة
-      <input type="number" id="priceMattress" value="350">
+      <input type="number" min="0" step="0.01" required id="priceMattress" value="350">
     </label>
 
     <h4>🧼 التعقيم والتطهير</h4>
 
     <label>شقة صغيرة
-      <input type="number" id="priceDisinfectSmall" value="600">
+      <input type="number" min="0" step="0.01" required id="priceDisinfectSmall" value="600">
     </label>
 
     <label>شقة متوسطة
-      <input type="number" id="priceDisinfectMedium" value="800">
+      <input type="number" min="0" step="0.01" required id="priceDisinfectMedium" value="800">
     </label>
 
     <label>فيلا أو مساحة كبيرة
-      <input type="number" id="priceDisinfectLarge" value="1200">
+      <input type="number" min="0" step="0.01" required id="priceDisinfectLarge" value="1200">
     </label>
 
     <h4>🐜 مكافحة الحشرات والآفات</h4>
 
     <label>النمل والحشرات الزاحفة
-      <input type="number" id="priceAnts" value="600">
+      <input type="number" min="0" step="0.01" required id="priceAnts" value="600">
     </label>
 
     <label>الصراصير
-      <input type="number" id="priceCockroaches" value="700">
+      <input type="number" min="0" step="0.01" required id="priceCockroaches" value="700">
     </label>
 
     <label>الحشرات الطائرة
-      <input type="number" id="priceFlying" value="700">
+      <input type="number" min="0" step="0.01" required id="priceFlying" value="700">
     </label>
 
     <label>القوارض
-      <input type="number" id="priceRodents" value="900">
+      <input type="number" min="0" step="0.01" required id="priceRodents" value="900">
     </label>
 
     <label>بق الفراش
-      <input type="number" id="priceBedbugs" value="1200">
+      <input type="number" min="0" step="0.01" required id="priceBedbugs" value="1200">
     </label>
 
     <h4>📦 باقات كاملين</h4>
 
     <label>الاقتصادية
-      <input type="number" id="priceEconomic" value="850">
+      <input type="number" min="0" step="0.01" required id="priceEconomic" value="850">
     </label>
 
     <label>الشاملة
-      <input type="number" id="priceComplete" value="1200">
+      <input type="number" min="0" step="0.01" required id="priceComplete" value="1200">
     </label>
 
     <label>اللمعان
-      <input type="number" id="priceShine" value="1600">
+      <input type="number" min="0" step="0.01" required id="priceShine" value="1600">
     </label>
 
     <label>الملكية
-      <input type="number" id="priceRoyal" value="2500">
+      <input type="number" min="0" step="0.01" required id="priceRoyal" value="2500">
     </label>
 
     <h4>📅 الاشتراكات الشهرية</h4>
 
     <label>4 زيارات
-      <input type="number" id="priceMonthly4" value="3000">
+      <input type="number" min="0" step="0.01" required id="priceMonthly4" value="3000">
     </label>
 
     <label>8 زيارات
-      <input type="number" id="priceMonthly8" value="5600">
+      <input type="number" min="0" step="0.01" required id="priceMonthly8" value="5600">
     </label>
 
     <label>12 زيارة
-      <input type="number" id="priceMonthly12" value="7800">
+      <input type="number" min="0" step="0.01" required id="priceMonthly12" value="7800">
     </label>
 
-    <button type="button" class="primary" id="savePricesBtn">
+    <button type="button" class="primary" id="savePricesBtn" disabled>
       💾 حفظ جميع الأسعار
     </button>
   </div>

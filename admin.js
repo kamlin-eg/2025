@@ -5,45 +5,52 @@ const ADMIN_EMAIL = "kamlin.eg2025@gmail.com";
 const sb = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
-);const LOGIN_SESSION_KEY="kamlin_admin_authenticated";
+);
 const KEYS={bookings:"kamlin_bookings",workers:"kamlin_workers",assignments:"kamlin_assignments",attendance:"kamlin_attendance",tools:"kamlin_tools"};
 const load=k=>{try{return JSON.parse(localStorage.getItem(k)||"[]")}catch{return[]}};const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 let bookings=load(KEYS.bookings).map(x=>({...x,status:x.status==="ملغي"?"ملغى":x.status})),workers=load(KEYS.workers),assignments=load(KEYS.assignments),attendance=load(KEYS.attendance),tools=load(KEYS.tools);
 async function initAdminLogin() {
-  const loginScreen = document.getElementById("adminLogin");
-  const loginForm = document.getElementById("adminLoginForm");
-  const passwordInput = document.getElementById("adminPassword");
-
-  const { data: { session } } = await sb.auth.getSession();
-
-  if (session) {
-    loginScreen.style.display = "none";
-    localStorage.setItem(LOGIN_SESSION_KEY, "true");
-  } else {
-    loginScreen.style.display = "flex";
-    localStorage.removeItem(LOGIN_SESSION_KEY);
-  }
-
-  loginForm.onsubmit = async (e) => {
-    e.preventDefault();
-
-    const password = passwordInput.value;
-
-    const { error } = await sb.auth.signInWithPassword({
-      email: ADMIN_EMAIL,
-      password: password
-    });
-
-    if (error) {
-      passwordInput.value = "";
-      alert("كلمة المرور غير صحيحة");
-      return;
-    }
-
-    localStorage.setItem(LOGIN_SESSION_KEY, "true");
-    loginScreen.style.display = "none";
-    passwordInput.value = "";
+  const loginScreen = document.getElementById('adminLogin');
+  const loginForm = document.getElementById('adminLoginForm');
+  const passwordInput = document.getElementById('adminPassword');
+  const loginError = document.getElementById('loginError');
+  const applySession = session => {
+    const allowed = session?.user?.email === ADMIN_EMAIL;
+    loginScreen.style.display = allowed ? 'none' : 'flex';
+    document.querySelector('.admin-main').inert = !allowed;
+    document.querySelector('.sidebar').inert = !allowed;
+    pricesReady = false;
+    document.getElementById('savePricesBtn').disabled = true;
+    if (allowed) loadPrices();
   };
+  loginForm.onsubmit = async e => {
+    e.preventDefault();
+    const button = loginForm.querySelector('button[type="submit"]');
+    button.disabled = true;
+    loginError.textContent = '';
+    try {
+      const { data, error } = await sb.auth.signInWithPassword({email: ADMIN_EMAIL, password: passwordInput.value});
+      if (error) throw error;
+      applySession(data.session);
+    } catch (error) {
+      loginError.textContent = 'تعذر تسجيل الدخول. تحقق من كلمة المرور والاتصال ثم حاول مرة أخرى.';
+    } finally {
+      passwordInput.value = '';
+      button.disabled = false;
+    }
+  };
+  sb.auth.onAuthStateChange((event, session) => {
+    // Defer database work until Supabase finishes its authentication callback.
+    if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') setTimeout(() => applySession(session), 0);
+  });
+  try {
+    const { data, error } = await sb.auth.getSession();
+    if (error) throw error;
+    applySession(data.session);
+  } catch (error) {
+    applySession(null);
+    loginError.textContent = 'تعذر التحقق من جلسة الدخول. أعد المحاولة.';
+  }
 }
 function switchView(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.nav-link[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===id));document.getElementById(id)?.classList.add('active');renderAll()}
 document.querySelectorAll('.nav-link[data-view]').forEach(b=>b.onclick=()=>switchView(b.dataset.view));
@@ -71,8 +78,8 @@ function csv(){const rows=[['التاريخ','العميل','الهاتف','ال
 document.getElementById('exportBookings').onclick=csv;document.getElementById('clearBookings').onclick=()=>{if(confirm('هل تريد حذف كل الطلبات؟')){bookings=[];save(KEYS.bookings,bookings);renderAll()}};document.getElementById('searchInput').oninput=renderBookings;document.getElementById('statusFilter').onchange=renderBookings;
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>document.getElementById(b.dataset.close).close());document.querySelectorAll('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target===d)d.close()}));document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('dialog[open]').forEach(d=>d.close())});
 async function logout() {
-  await sb.auth.signOut();
-  localStorage.removeItem(LOGIN_SESSION_KEY);
+  const { error } = await sb.auth.signOut();
+  if (error) { alert('تعذر تسجيل الخروج. حاول مرة أخرى.'); return; }
   window.location.reload();
 }
 
@@ -80,7 +87,9 @@ const logoutBtn = document.getElementById("logoutBtn");
 if (logoutBtn) {
   logoutBtn.addEventListener("click", logout);
 }
-const PRICE_STORAGE_KEY = "kamlin_prices";
+let pricesReady = false;
+let pricesLoading = false;
+let pricesSaving = false;
 
 const PRICE_FIELDS = [
   "priceRegular",
@@ -108,79 +117,73 @@ const PRICE_FIELDS = [
   "priceMonthly12"
 ];
 
+function priceStatus(message, error = false) {
+  const status = document.getElementById('pricesStatus');
+  status.textContent = message;
+  status.style.color = error ? '#b91c1c' : '';
+}
+
 async function loadPrices() {
+  if (pricesLoading || pricesSaving) return;
+  pricesLoading = true;
+  pricesReady = false;
+  const button = document.getElementById('savePricesBtn');
+  button.disabled = true;
+  priceStatus('جارٍ تحميل الأسعار…');
   try {
-    const { data, error } = await sb
-      .from("site_settings")
-      .select("value")
-      .eq("key", "prices")
-      .maybeSingle();
-
+    const { data, error } = await sb.from('site_settings').select('value').eq('key', 'prices').abortSignal(AbortSignal.timeout(15000)).maybeSingle();
     if (error) throw error;
-
-    if (!data || !data.value) return;
-
-    const saved = data.value;
-
+    const saved = data?.value;
+    if (saved && (typeof saved !== 'object' || Array.isArray(saved))) throw new Error('صيغة الأسعار المحفوظة غير صحيحة');
     PRICE_FIELDS.forEach(id => {
       const input = document.getElementById(id);
-
-      if (input && saved[id] !== undefined) {
-        input.value = saved[id];
-      }
+      input.value = saved?.[id] ?? input.defaultValue;
     });
-
+    pricesReady = true;
+    priceStatus(saved ? 'تم تحميل الأسعار المحفوظة.' : 'لم تُنشر أسعار بعد. راجع القيم ثم اضغط حفظ لنشرها.');
   } catch (error) {
-    console.error("خطأ في تحميل الأسعار:", error);
+    console.error('Price load failed', error);
+    priceStatus('تعذر تحميل الأسعار. تحقق من إعداد قاعدة البيانات والاتصال ثم أعد التحميل. لم يتم تغيير الأسعار.', true);
+  } finally {
+    pricesLoading = false;
+    button.disabled = !pricesReady;
   }
 }
-
 
 async function savePrices() {
+  if (!pricesReady || pricesSaving) return;
   const prices = {};
-
-  PRICE_FIELDS.forEach(id => {
+  for (const id of PRICE_FIELDS) {
     const input = document.getElementById(id);
-
-    if (input) {
-      prices[id] = input.value;
+    const value = Number(input.value);
+    if (!input.value.trim() || !Number.isFinite(value) || value < 0 || !input.checkValidity()) {
+      priceStatus('أدخل سعرًا صحيحًا لا يقل عن صفر لكل خدمة.', true);
+      input.focus();
+      return;
     }
-  });
-
-  try {
-    const { error } = await sb
-      .from("site_settings")
-      .upsert({
-        key: "prices",
-        value: prices,
-        updated_at: new Date().toISOString()
-      });
-
-    if (error) throw error;
-
-    alert("✅ تم حفظ الأسعار في قاعدة البيانات بنجاح");
-
-  } catch (error) {
-    console.error(error);
-    alert("❌ لم يتم حفظ الأسعار: " + error.message);
+    prices[id] = value;
   }
-}{
-  const prices = {};
-
-  PRICE_FIELDS.forEach(id => {
-    const input = document.getElementById(id);
-    if (input) prices[id] = input.value;
-  });
-
-  localStorage.setItem(PRICE_STORAGE_KEY, JSON.stringify(prices));
-  alert("✅ تم حفظ الأسعار بنجاح");
+  pricesSaving = true;
+  const button = document.getElementById('savePricesBtn');
+  button.disabled = true;
+  priceStatus('جارٍ حفظ الأسعار…');
+  try {
+    const { data: sessionData, error: sessionError } = await sb.auth.getSession();
+    if (sessionError) throw sessionError;
+    if (sessionData.session?.user?.email !== ADMIN_EMAIL) throw new Error('يلزم تسجيل دخول الأدمن');
+    const { data, error } = await sb.from('site_settings').upsert({key: 'prices', value: prices, updated_at: new Date().toISOString()}, {onConflict: 'key'}).select('value').abortSignal(AbortSignal.timeout(15000)).single();
+    if (error) throw error;
+    if (!data || PRICE_FIELDS.some(id => Number(data.value?.[id]) !== prices[id])) throw new Error('لم تؤكد قاعدة البيانات حفظ الأسعار');
+    priceStatus('تم حفظ الأسعار في قاعدة البيانات ونشرها على الموقع بنجاح.');
+  } catch (error) {
+    console.error('Price save failed', error);
+    priceStatus('لم يتم تأكيد حفظ الأسعار. تحقق من الاتصال وصلاحيات الحساب ثم أعد المحاولة.', true);
+  } finally {
+    pricesSaving = false;
+    button.disabled = !pricesReady;
+  }
 }
-
-const savePricesBtn = document.getElementById("savePricesBtn");
-
-if (savePricesBtn) {
-  savePricesBtn.addEventListener("click", savePrices);
-}
-
-loadPrices();
-initAdminLogin();renderAll();
+document.getElementById('savePricesBtn').addEventListener('click', savePrices);
+document.getElementById('reloadPricesBtn').addEventListener('click', loadPrices);
+initAdminLogin();
+renderAll();
