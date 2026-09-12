@@ -58,3 +58,43 @@ function bookService(service){
 }
 function toggleMenu(){ document.getElementById("mainNav")?.classList.toggle("open"); }
 document.getElementById("year").textContent=new Date().getFullYear();
+
+// Public pricing always comes from Supabase, never this browser's localStorage.
+const publicPriceClient = window.supabase?.createClient(
+  "https://hxphmxkimjxngsrlxcjn.supabase.co",
+  "sb_publishable_V-vK8enWv_NNYbigWPSkhA_gq-D8s0t",
+  {auth: {persistSession: false, autoRefreshToken: false, detectSessionInUrl: false}}
+);
+let publicPricesLoading = false;
+async function refreshPublicPrices() {
+  if (publicPricesLoading) return;
+  publicPricesLoading = true;
+  const status = document.getElementById('publicPricesStatus');
+  const button = document.getElementById('retryPricesBtn');
+  button.disabled = true;
+  try {
+    if (!publicPriceClient) throw new Error('Supabase is unavailable');
+    const {data, error} = await publicPriceClient.from('site_settings').select('value').eq('key', 'prices').abortSignal(AbortSignal.timeout(15000)).maybeSingle();
+    if (error) throw error;
+    let displayed = 0;
+    document.querySelectorAll('[data-price]').forEach(element => {
+      const value = data?.value?.[element.dataset.price];
+      const valid = (typeof value === 'number' || typeof value === 'string') && String(value).trim() !== '' && Number.isFinite(Number(value)) && Number(value) >= 0;
+      element.textContent = valid ? new Intl.NumberFormat('ar-EG', {maximumFractionDigits: 2}).format(Number(value)) + ' ج.م' : 'تواصل معنا لمعرفة السعر';
+      if (valid) displayed++;
+    });
+    status.textContent = displayed ? 'الأسعار الحالية للخدمات والباقات.' : 'الأسعار غير متاحة حاليًا. تواصل معنا للحصول على عرض سعر.';
+  } catch (error) {
+    console.error('Public prices unavailable', error);
+    document.querySelectorAll('[data-price]').forEach(element => element.textContent = 'تواصل معنا لمعرفة السعر');
+    status.textContent = 'تعذر تحميل الأسعار الآن. أعد المحاولة أو تواصل معنا.';
+  } finally {
+    publicPricesLoading = false;
+    button.disabled = false;
+  }
+}
+document.getElementById('retryPricesBtn').addEventListener('click', refreshPublicPrices);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshPublicPrices(); });
+window.addEventListener('online', refreshPublicPrices);
+setInterval(() => { if (!document.hidden) refreshPublicPrices(); }, 60000);
+refreshPublicPrices();
