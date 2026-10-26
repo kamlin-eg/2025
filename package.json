@@ -1,0 +1,25 @@
+{
+  "name": "kamlin-2025",
+  "version": "1.0.0",
+  "description": "نسخة كاملة ونظيفة للموقع ونظام الإدارة.",
+  "main": "admin.js",
+  "scripts": {
+    "test": "node --check admin.js && node --check app.js && node --test prices.test.cjs tests/*.test.cjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kamlin-eg/2025.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/kamlin-eg/2025/issues"
+  },
+  "homepage": "https://github.com/kamlin-eg/2025#readme",
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.12"
+  },
+  "private": true
+}

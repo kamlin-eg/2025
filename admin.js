@@ -134,7 +134,7 @@ async function loadPrices() {
     const { data, error } = await sb.from('site_settings').select('value').eq('key', 'prices').abortSignal(AbortSignal.timeout(15000)).maybeSingle();
     if (error) throw error;
     const saved = data?.value;
-    if (saved && (typeof saved !== 'object' || Array.isArray(saved))) throw new Error('صيغة الأسعار المحفوظة غير صحيحة');
+    if (saved && (typeof saved !== 'object' || Array.isArray(saved) || Object.keys(saved).length !== PRICE_FIELDS.length || PRICE_FIELDS.some(id => typeof saved[id] !== 'number' || !Number.isFinite(saved[id]) || saved[id] < 0))) throw new Error('صيغة الأسعار المحفوظة غير صحيحة');
     PRICE_FIELDS.forEach(id => {
       const input = document.getElementById(id);
       input.value = saved?.[id] ?? input.defaultValue;
@@ -156,7 +156,7 @@ async function savePrices() {
   for (const id of PRICE_FIELDS) {
     const input = document.getElementById(id);
     const value = Number(input.value);
-    if (!input.value.trim() || !Number.isFinite(value) || value < 0 || !input.checkValidity()) {
+    if (!input.value.trim() || !Number.isFinite(value) || value < 0 || Math.abs(value * 100 - Math.round(value * 100)) > 1e-6 || !input.checkValidity()) {
       priceStatus('أدخل سعرًا صحيحًا لا يقل عن صفر لكل خدمة.', true);
       input.focus();
       return;
@@ -173,7 +173,7 @@ async function savePrices() {
     if (sessionData.session?.user?.email !== ADMIN_EMAIL) throw new Error('يلزم تسجيل دخول الأدمن');
     const { data, error } = await sb.from('site_settings').upsert({key: 'prices', value: prices, updated_at: new Date().toISOString()}, {onConflict: 'key'}).select('value').abortSignal(AbortSignal.timeout(15000)).single();
     if (error) throw error;
-    if (!data || PRICE_FIELDS.some(id => Number(data.value?.[id]) !== prices[id])) throw new Error('لم تؤكد قاعدة البيانات حفظ الأسعار');
+    if (!data || PRICE_FIELDS.some(id => typeof data.value?.[id] !== 'number' || data.value[id] !== prices[id])) throw new Error('لم تؤكد قاعدة البيانات حفظ الأسعار');
     priceStatus('تم حفظ الأسعار في قاعدة البيانات ونشرها على الموقع بنجاح.');
   } catch (error) {
     console.error('Price save failed', error);

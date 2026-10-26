@@ -7,6 +7,44 @@ create table if not exists public.site_settings (
   updated_at timestamptz not null default now(),
   constraint site_settings_object check (jsonb_typeof(value) = 'object')
 );
+
+-- Enforce the complete public payload in PostgreSQL, including direct API writes.
+create or replace function public.kamlin_valid_prices(payload jsonb)
+returns boolean language plpgsql immutable set search_path = pg_catalog as $$
+declare
+  required_keys constant text[] := ARRAY['priceRegular', 'priceDeep', 'priceConstruction', 'priceVillas', 'priceCompanies', 'priceClinics', 'priceSofa', 'priceMattress', 'priceDisinfectSmall', 'priceDisinfectMedium', 'priceDisinfectLarge', 'priceAnts', 'priceCockroaches', 'priceFlying', 'priceRodents', 'priceBedbugs', 'priceEconomic', 'priceComplete', 'priceShine', 'priceRoyal', 'priceMonthly4', 'priceMonthly8', 'priceMonthly12'];
+  field text;
+  amount numeric;
+begin
+  if jsonb_typeof(payload) is distinct from 'object' then return false; end if;
+  if (select count(*) from jsonb_object_keys(payload)) <> array_length(required_keys, 1)
+     or not (payload ?& required_keys) then return false; end if;
+  foreach field in array required_keys loop
+    if jsonb_typeof(payload -> field) is distinct from 'number' then return false; end if;
+    amount := (payload ->> field)::numeric;
+    if amount < 0 or amount <> round(amount, 2) then return false; end if;
+  end loop;
+  return true;
+end $$;
+
+-- Re-applying must inspect existing data instead of silently accepting a wrong schema.
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conrelid = 'public.site_settings'::regclass and contype = 'p' and pg_get_constraintdef(oid) = 'PRIMARY KEY (key)') then
+    raise exception 'site_settings needs a primary key on key; review the existing schema';
+  end if;
+end $$;
+alter table public.site_settings drop constraint if exists kamlin_prices_payload;
+alter table public.site_settings add constraint kamlin_prices_payload
+  check (key <> 'prices' or public.kamlin_valid_prices(value));
+
+create or replace function public.kamlin_settings_timestamp()
+returns trigger language plpgsql set search_path = pg_catalog as $$
+begin new.updated_at := now(); return new; end $$;
+drop trigger if exists kamlin_settings_timestamp on public.site_settings;
+create trigger kamlin_settings_timestamp before insert or update on public.site_settings
+for each row execute function public.kamlin_settings_timestamp();
+
 alter table public.site_settings enable row level security;
 grant select on public.site_settings to anon, authenticated;
 grant insert, update on public.site_settings to authenticated;

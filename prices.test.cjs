@@ -148,3 +148,17 @@ test('public failures remove stale prices; missing or malformed values are not z
   assert.ok(f.priceNodes.every(n => /تواصل/.test(n.textContent)));
 });
 
+test('incomplete stored payload blocks editing instead of publishing fallback prices', async () => {
+  const f = fixture('admin', {value: {priceRegular: 100}});
+  await vm.runInContext('loadPrices()', f.context);
+  assert.equal(f.element('savePricesBtn').disabled, true);
+  assert.match(f.element('pricesStatus').textContent, /تعذر/);
+});
+test('precision is enforced even without browser input validation', async () => {
+  const f = fixture('admin');
+  f.state.session = {user: {email}};
+  await vm.runInContext('loadPrices()', f.context);
+  f.element('priceRegular').value = '1.234';
+  await vm.runInContext('savePrices()', f.context);
+  assert.equal(f.requests.filter(r => r.row).length, 0);
+});
